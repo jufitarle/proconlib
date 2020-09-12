@@ -1,14 +1,4 @@
-trait StringUtil {
-    fn run_length(&self) -> String;
-}
 
-impl StringUtil for String {
-    fn run_length(&self) -> String {
-        let v: Vec<char> = self.chars().collect();
-        let res = v.compress().iter().collect();
-        res
-    }
-}
 
 trait VecUtil {
     fn compress(&self) -> Self;
