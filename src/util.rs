@@ -4,10 +4,9 @@ trait VecUtil {
 
 impl VecUtil for Vec<char> {
     fn compress(&self) -> Self {
-        let n = self.len();
         let mut res = vec![self[0]];
         let mut count = 1;
-        for i in 1..n {
+        for i in 1..self.len() {
             if self[i - 1] == self[i] {
                 count += 1;
             } else {
