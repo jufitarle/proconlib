@@ -4,24 +4,35 @@ trait StringUtil {
 
 impl StringUtil for String {
     fn run_length(&self) -> String {
-        let n = self.len();
         let v: Vec<char> = self.chars().collect();
-        let mut res = String::new();
+        let res = v.compress().iter().collect();
+        res
+    }
+}
+
+trait VecUtil {
+    fn compress(&self) -> Self;
+}
+
+impl VecUtil for Vec<char> {
+    fn compress(&self) -> Self {
+        let n = self.len();
+        let mut res = vec![];
         let mut count = 1;
         for i in 1..n {
-            if v[i - 1] != v[i] {
-                res.push(v[i - 1]);
-                res.push_str(count.to_string().as_str());
+            if self[i - 1] != self[i] {
+                res.push(self[i - 1]);
+                res = [res, count.to_string().chars().collect()].concat();
                 count = 1;
                 if i == n - 1 {
-                    res.push(v[i]);
+                    res.push(self[i]);
                     res.push('1');
                 }
             } else {
                 count += 1;
                 if i == n - 1 {
-                    res.push(v[i - 1]);
-                    res.push_str(count.to_string().as_str());
+                    res.push(self[i - 1]);
+                    res = [res, count.to_string().chars().collect()].concat();
                 }
             }
         }
