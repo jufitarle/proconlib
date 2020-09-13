@@ -19,3 +19,21 @@ impl VecUtil for Vec<char> {
         res
     }
 }
+
+trait Coordinate {
+    fn euclid_distance(&self, other: Self) -> f64;
+    fn manhattan_distance(&self, other: Self) -> isize;
+}
+
+impl Coordinate for (isize, isize) {
+    fn euclid_distance(&self, other: Self) -> f64 {
+        let xdis = (self.0 - other.0).abs() as f64;
+        let ydis = (self.1 - other.1).abs() as f64;
+        let res = (xdis * xdis + ydis * ydis).sqrt();
+        res
+    }
+
+    fn manhattan_distance(&self, other: Self) -> isize {
+        (self.0 - other.0).abs() + (self.1 - other.1).abs()
+    }
+}
