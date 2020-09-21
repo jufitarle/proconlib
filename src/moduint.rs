@@ -13,11 +13,11 @@ impl Musize {
         }
     }
 
-    fn inv(n: usize, modulo: usize) -> usize {
+    fn inv(&self) -> usize {
         let mut x = 0;
         let mut y = 0;
-        let modulo = modulo as isize;
-        Musize::extgcd(n as isize, modulo, &mut x, &mut y);
+        let modulo = self.modulo as isize;
+        Musize::extgcd(self.val as isize, modulo, &mut x, &mut y);
         x %= modulo;
         if x < 0 {
             x += modulo;
@@ -39,15 +39,26 @@ impl Musize {
         *y = z;
         g
     }
+
+    fn pow(&mut self, e: usize) {
+        let mut e = e;
+        let mut p = Musize::new(1, self.modulo);
+        let mut cur = Musize::new(self.val, self.modulo);
+        while e > 0 {
+            if e % 2 == 1 {
+                p *= cur;
+            }
+            cur *= cur;
+            e /= 2;
+        }
+        *self = p;
+    }
 }
 
 impl Add<usize> for Musize {
     type Output = Musize;
     fn add(self, rhs: usize) -> Self::Output {
-        Musize {
-            val: (self.val + rhs) % self.modulo,
-            modulo: self.modulo,
-        }
+        Musize::new((self.val + rhs) % self.modulo, self.modulo)
     }
 }
 
@@ -62,10 +73,7 @@ impl Sub<usize> for Musize {
     fn sub(self, rhs: usize) -> Self::Output {
         let n = self.val + self.modulo;
         let m = rhs % self.modulo;
-        Musize {
-            val: (n - m) % self.modulo,
-            modulo: self.modulo,
-        }
+        Musize::new((n - m) % self.modulo, self.modulo)
     }
 }
 
@@ -80,10 +88,7 @@ impl SubAssign<usize> for Musize {
 impl Mul<usize> for Musize {
     type Output = Musize;
     fn mul(self, rhs: usize) -> Self::Output {
-        Musize {
-            val: (self.val * (rhs % self.modulo)) % self.modulo,
-            modulo: self.modulo,
-        }
+        Musize::new((self.val * (rhs % self.modulo)) % self.modulo, self.modulo)
     }
 }
 
@@ -96,15 +101,73 @@ impl MulAssign<usize> for Musize {
 impl Div<usize> for Musize {
     type Output = Musize;
     fn div(self, rhs: usize) -> Self::Output {
-        Musize {
-            val: (self.val * Musize::inv(rhs, self.modulo)) % self.modulo,
-            modulo: self.modulo,
-        }
+        let rhs = Musize::new(rhs, self.modulo);
+        Musize::new(self.val * rhs.inv() % self.modulo, self.modulo)
     }
 }
 
 impl DivAssign<usize> for Musize {
     fn div_assign(&mut self, rhs: usize) {
-        self.val = (self.val * Musize::inv(rhs, self.modulo)) % self.modulo;
+        let rhs = Musize::new(rhs, self.modulo);
+        self.val = (self.val * rhs.inv()) % self.modulo;
+    }
+}
+
+impl Add<Musize> for Musize {
+    type Output = Musize;
+    fn add(self, rhs: Musize) -> Self::Output {
+        Musize::new((self.val + rhs.val) % self.modulo, self.modulo)
+    }
+}
+
+impl AddAssign<Musize> for Musize {
+    fn add_assign(&mut self, rhs: Musize) {
+        self.val = (self.val * rhs.val) % self.modulo;
+    }
+}
+
+impl Sub<Musize> for Musize {
+    type Output = Musize;
+    fn sub(self, rhs: Musize) -> Self::Output {
+        let n = self.val + self.modulo;
+        let m = rhs.val % self.modulo;
+        Musize::new((n - m) % self.modulo, self.modulo)
+    }
+}
+
+impl SubAssign<Musize> for Musize {
+    fn sub_assign(&mut self, rhs: Musize) {
+        let n = self.val + self.modulo;
+        let m = rhs.val % self.modulo;
+        self.val = (n - m) % self.modulo;
+    }
+}
+
+impl Mul<Musize> for Musize {
+    type Output = Musize;
+    fn mul(self, rhs: Musize) -> Self::Output {
+        Musize::new(
+            (self.val * (rhs.val % self.modulo)) % self.modulo,
+            self.modulo,
+        )
+    }
+}
+
+impl MulAssign<Musize> for Musize {
+    fn mul_assign(&mut self, rhs: Musize) {
+        self.val = (self.val * (rhs.val % self.modulo)) % self.modulo;
+    }
+}
+
+impl Div<Musize> for Musize {
+    type Output = Musize;
+    fn div(self, rhs: Musize) -> Self::Output {
+        Musize::new(self.val * rhs.inv() % self.modulo, self.modulo)
+    }
+}
+
+impl DivAssign<Musize> for Musize {
+    fn div_assign(&mut self, rhs: Musize) {
+        self.val = (self.val * rhs.inv()) % self.modulo;
     }
 }
