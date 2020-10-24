@@ -1,173 +1,205 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
-#[derive(Debug, Clone, Copy, Eq, PartialOrd, PartialEq, Ord, Hash)]
-struct Musize {
-    val: usize,
-    modulo: usize,
-}
 
-impl Musize {
-    fn new(val: usize, modulo: usize) -> Musize {
-        Musize {
-            val: val % modulo,
-            modulo,
-        }
-    }
+    pub mod mint {
+        use super::constants::MOD;
 
-    fn inv(&self) -> usize {
-        let mut x = 0;
-        let mut y = 0;
-        let modulo = self.modulo as isize;
-        Musize::extgcd(self.val as isize, modulo, &mut x, &mut y);
-        x %= modulo;
-        if x < 0 {
-            x += modulo;
-        }
-        x as usize
-    }
-
-    fn extgcd(a: isize, b: isize, x: &mut isize, y: &mut isize) -> isize {
-        if b == 0 {
-            *x = 1;
-            *y = 0;
-            return a;
+        #[derive(Debug, Default, Clone, Copy, Hash, Ord, PartialOrd, Eq, PartialEq)]
+        pub struct Mint {
+            pub val: isize,
         }
 
-        let q = a / b;
-        let g = Musize::extgcd(b, a - q * b, x, y);
-        let z = *x - q * *y;
-        *x = *y;
-        *y = z;
-        g
-    }
-
-    fn pow(&mut self, e: usize) {
-        let mut e = e;
-        let mut p = Musize::new(1, self.modulo);
-        let mut cur = Musize::new(self.val, self.modulo);
-        while e > 0 {
-            if e % 2 == 1 {
-                p *= cur;
+        #[allow(dead_code)]
+        impl Mint {
+            pub fn new(val: isize) -> Self {
+                Mint {
+                    val: Mint::adjust(val),
+                }
             }
-            cur *= cur;
-            e /= 2;
+
+            fn init(&mut self) {
+                self.val = Self::adjust(self.val);
+            }
+
+            fn adjust(val: isize) -> isize {
+                let val = if val < 0 {
+                    val + (val.abs() / MOD + 1) * MOD
+                } else {
+                    val
+                };
+                val % MOD
+            }
+
+            pub fn inv(&self) -> Mint {
+                self.pow((MOD - 2) as usize)
+            }
+
+            pub fn pow(&self, n: usize) -> Mint {
+                let mut a = self.val;
+                let mut res = Mint::new(1);
+                let mut n = n;
+                while n > 0 {
+                    if n & 1 == 1 {
+                        res *= a;
+                    }
+                    a = Self::adjust(a * a);
+                    n >>= 1;
+                }
+                res
+            }
         }
-        *self = p;
-    }
-}
 
-impl Add<usize> for Musize {
-    type Output = Musize;
-    fn add(self, rhs: usize) -> Self::Output {
-        Musize::new((self.val + rhs) % self.modulo, self.modulo)
-    }
-}
+        mod mint_traits {
+            use super::Mint;
 
-impl AddAssign<usize> for Musize {
-    fn add_assign(&mut self, rhs: usize) {
-        self.val = (self.val + rhs) % self.modulo;
-    }
-}
+            impl std::fmt::Display for Mint {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    write!(f, "{}", self.val)
+                }
+            }
 
-impl Sub<usize> for Musize {
-    type Output = Musize;
-    fn sub(self, rhs: usize) -> Self::Output {
-        let n = self.val + self.modulo;
-        let m = rhs % self.modulo;
-        Musize::new((n - m) % self.modulo, self.modulo)
-    }
-}
+            impl proconio::source::Readable for Mint {
+                type Output = Mint;
 
-impl SubAssign<usize> for Musize {
-    fn sub_assign(&mut self, rhs: usize) {
-        self.val += self.modulo;
-        let rhs = rhs % self.modulo;
-        self.val = (self.val - rhs) % self.modulo;
-    }
-}
+                fn read<R: std::io::BufRead, S: proconio::source::Source<R>>(
+                    source: &mut S,
+                ) -> Self::Output {
+                    Mint::new(isize::read(source))
+                }
+            }
 
-impl Mul<usize> for Musize {
-    type Output = Musize;
-    fn mul(self, rhs: usize) -> Self::Output {
-        Musize::new((self.val * (rhs % self.modulo)) % self.modulo, self.modulo)
-    }
-}
+            mod operators {
+                use super::Mint;
+                use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-impl MulAssign<usize> for Musize {
-    fn mul_assign(&mut self, rhs: usize) {
-        self.val = (self.val * (rhs % self.modulo)) % self.modulo;
-    }
-}
+                impl Add<Mint> for Mint {
+                    type Output = Mint;
 
-impl Div<usize> for Musize {
-    type Output = Musize;
-    fn div(self, rhs: usize) -> Self::Output {
-        let rhs = Musize::new(rhs, self.modulo);
-        Musize::new(self.val * rhs.inv() % self.modulo, self.modulo)
-    }
-}
+                    fn add(self, rhs: Mint) -> Self::Output {
+                        Mint::new(self.val + rhs.val)
+                    }
+                }
 
-impl DivAssign<usize> for Musize {
-    fn div_assign(&mut self, rhs: usize) {
-        let rhs = Musize::new(rhs, self.modulo);
-        self.val = (self.val * rhs.inv()) % self.modulo;
-    }
-}
+                impl AddAssign<Mint> for Mint {
+                    fn add_assign(&mut self, rhs: Mint) {
+                        self.val += rhs.val;
+                        self.init();
+                    }
+                }
 
-impl Add<Musize> for Musize {
-    type Output = Musize;
-    fn add(self, rhs: Musize) -> Self::Output {
-        Musize::new((self.val + rhs.val) % self.modulo, self.modulo)
-    }
-}
+                impl Sub<Mint> for Mint {
+                    type Output = Mint;
 
-impl AddAssign<Musize> for Musize {
-    fn add_assign(&mut self, rhs: Musize) {
-        self.val = (self.val * rhs.val) % self.modulo;
-    }
-}
+                    fn sub(self, rhs: Mint) -> Self::Output {
+                        Mint::new(self.val - rhs.val)
+                    }
+                }
 
-impl Sub<Musize> for Musize {
-    type Output = Musize;
-    fn sub(self, rhs: Musize) -> Self::Output {
-        let n = self.val + self.modulo;
-        let m = rhs.val % self.modulo;
-        Musize::new((n - m) % self.modulo, self.modulo)
-    }
-}
+                impl SubAssign<Mint> for Mint {
+                    fn sub_assign(&mut self, rhs: Mint) {
+                        self.val -= rhs.val;
+                        self.init();
+                    }
+                }
 
-impl SubAssign<Musize> for Musize {
-    fn sub_assign(&mut self, rhs: Musize) {
-        let n = self.val + self.modulo;
-        let m = rhs.val % self.modulo;
-        self.val = (n - m) % self.modulo;
-    }
-}
+                impl Mul<Mint> for Mint {
+                    type Output = Mint;
 
-impl Mul<Musize> for Musize {
-    type Output = Musize;
-    fn mul(self, rhs: Musize) -> Self::Output {
-        Musize::new(
-            (self.val * (rhs.val % self.modulo)) % self.modulo,
-            self.modulo,
-        )
-    }
-}
+                    fn mul(self, rhs: Mint) -> Self::Output {
+                        Mint::new(self.val * rhs.val)
+                    }
+                }
 
-impl MulAssign<Musize> for Musize {
-    fn mul_assign(&mut self, rhs: Musize) {
-        self.val = (self.val * (rhs.val % self.modulo)) % self.modulo;
-    }
-}
+                impl MulAssign<Mint> for Mint {
+                    fn mul_assign(&mut self, rhs: Mint) {
+                        self.val *= rhs.val;
+                        self.init();
+                    }
+                }
 
-impl Div<Musize> for Musize {
-    type Output = Musize;
-    fn div(self, rhs: Musize) -> Self::Output {
-        Musize::new(self.val * rhs.inv() % self.modulo, self.modulo)
-    }
-}
+                impl Div<Mint> for Mint {
+                    type Output = Mint;
 
-impl DivAssign<Musize> for Musize {
-    fn div_assign(&mut self, rhs: Musize) {
-        self.val = (self.val * rhs.inv()) % self.modulo;
+                    fn div(self, rhs: Mint) -> Self::Output {
+                        self * rhs.inv()
+                    }
+                }
+
+                impl DivAssign<Mint> for Mint {
+                    fn div_assign(&mut self, rhs: Mint) {
+                        self.val = rhs.inv().val * self.val;
+                        self.init();
+                    }
+                }
+
+                macro_rules! impl_primitive {
+                    ($($t: ty),*) => {
+                        $(
+                            impl Add<$t> for Mint {
+                                type Output = Mint;
+
+                                fn add(self, rhs: $t) -> Self::Output {
+                                    Mint::new(rhs as isize + self.val)
+                                }
+                            }
+
+                            impl AddAssign<$t> for Mint {
+                                fn add_assign(&mut self, rhs: $t) {
+                                    self.val += rhs as isize;
+                                    self.init();
+                                }
+                            }
+
+                            impl Sub<$t> for Mint {
+                                type Output = Mint;
+
+                                fn sub(self, rhs: $t) -> Self::Output {
+                                    Mint::new(self.val - rhs as isize)
+                                }
+                            }
+
+                            impl SubAssign<$t> for Mint {
+                                fn sub_assign(&mut self, rhs: $t) {
+                                    self.val -= rhs as isize;
+                                    self.init();
+                                }
+                            }
+
+                            impl Mul<$t> for Mint {
+                                type Output = Mint;
+
+                                fn mul(self, rhs: $t) -> Self::Output {
+                                    Mint::new(self.val * rhs as isize)
+                                }
+                            }
+
+                            impl MulAssign<$t> for Mint {
+                                fn mul_assign(&mut self, rhs: $t) {
+                                    self.val *= rhs as isize;
+                                    self.init();
+                                }
+                            }
+
+                            impl Div<$t> for Mint {
+                                type Output = Mint;
+
+                                fn div(self, rhs: $t) -> Self::Output {
+                                    let rhs = Mint::new(rhs as isize);
+                                    self * rhs.inv()
+                                }
+                            }
+
+                            impl DivAssign<$t> for Mint {
+                                fn div_assign(&mut self, rhs: $t) {
+                                    let rhs = Mint::new(rhs as isize);
+                                    self.val = rhs.inv().val * self.val;
+                                    self.init();
+                                }
+                            }
+
+                        )*
+                    };
+                }
+
+                impl_primitive!(isize, i32, usize, i64, u64, u32, i128, u128, u8, i8, u16, i16);
+            }
+        }
     }
-}
